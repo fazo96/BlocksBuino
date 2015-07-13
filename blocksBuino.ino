@@ -4,11 +4,12 @@
 Gamebuino gb = Gamebuino();
 extern const byte PROGMEM logo[];
 
-boolean initialize = false;
-boolean game_over = false;
-boolean game_menu = false;
+#define NOT_INIT 0
+#define PLAYING 1
+#define GAME_OVER 2
+#define MENU 3
+byte gameStatus = 0;
 
-//game variables
 const short game_force_level = 0;
 short game_level = 1; // 1,2,3,4,5,6,7,8,9 Levels
 short game_menu_level = game_level;
@@ -68,37 +69,38 @@ const int field_w = 32;// 10 BLOCKS MAX // 42
 const int field_h = -(LCDHEIGHT) - 1;// - 4);// 12 BLOCKS MAX
 //END field variables
 
-//the setup routine runs once when Gamebuino starts up
 void setup(){
   gb.begin();
   gb.pickRandomSeed();
+
   gb.titleScreen(logo);
   gb.battery.show = false;
 }
 
+//the loop routine runs over and over again forever
 void loop(){
-  if (!initialize) {
-    InitGame();
+  if (gameStatus == NOT_INIT) {
+    initGame();
+    gameStatus = PLAYING;
   }
-
   if(gb.update()){
-    if (!game_over && !game_menu) {
+    if (gameStatus == PLAYING) {
       if(gb.buttons.pressed(BTN_C)){
         gb.sound.playCancel();
-        game_menu = true;
+        gameStatus = MENU;
       }
       Play();
     }
-    else if (game_menu) {
+    else if (gameStatus == MENU) {
       GameMenu();
     }
-    else if (game_over) {
+    else if (gameStatus == GAME_OVER) {
       GameOver();
     }
   }
 }
 
-void InitGame() {
+void initGame() {
   player_new_blocks = true;
 
   int i = 0;
@@ -133,7 +135,6 @@ void InitGame() {
   }
   game_menu_level = game_level;
   game_delai = game_levels[game_level - 1];
-  game_over = false;
 }
 
 void Play() {
@@ -171,11 +172,12 @@ void Play() {
     game_animation_delai_prevTime = millis();
   }
 
-  if (game_over) {
+  if (gameStatus == GAME_OVER) {
     PlaySoundFxGameOver();
   }
 }
 
+// Show main menu
 void GameMenu() {
   gb.display.cursorX = 5;
   gb.display.cursorY = 1;
@@ -206,19 +208,19 @@ void GameMenu() {
     gb.sound.playOK();
 
     game_level = game_menu_level;
-    initialize = false;
-    game_menu = false;
+    initGame();
+    gameStatus = PLAYING;
   }
   if(gb.buttons.pressed(BTN_B)){
     gb.sound.playOK();
 
     game_menu_level = game_level;
-    game_menu = false;
+    gameStatus = PLAYING;
   }
   if(gb.buttons.pressed(BTN_C)){
     gb.sound.playOK();
-
-    gb.changeGame();
+    gb.titleScreen(logo);
+    gb.battery.show = false;
   }
 }
 
@@ -242,11 +244,16 @@ void GameOver() {
   gb.display.cursorX = 0;
   gb.display.cursorY = 40;
   gb.display.print(F("\x16:accept"));
-  if(gb.buttons.pressed(BTN_B)){
-    gb.sound.playOK();
 
-    initialize = false;
-    game_over = false;
+  initGame();
+
+  if(gb.buttons.pressed(BTN_B) || gb.buttons.pressed(BTN_A)){
+    gb.sound.playOK();
+    gameStatus = MENU;
+  } else if(gb.buttons.pressed(BTN_C)){
+    gameStatus = MENU;
+    gb.titleScreen(logo);
+    gb.battery.show = false;
   }
 }
 
@@ -269,17 +276,21 @@ void MovePlayerBlocks() {
       MoveYBlocks(-1);
       action = true;
     }
+  } else if(gb.buttons.repeat(BTN_UP,10)){
+    while(player_blocks1[0] > 0 && !CheckBlocksCollision(0, -1)) {
+      MoveYBlocks(-1);
+      action = true;
+    }
   }
   if (gb.buttons.pressed(BTN_A)) {
     RotateBlocks();
   }
-
   unsigned long game_currentTime = millis();
   if (!action && (game_currentTime - game_prevTime) >= game_delai) {
     //check collision
     if (!player_new_blocks && CheckBlocksCollision(0, -1)) {
       if (player_blocks1[0] >= (BLOCKS_MAX_Y - 1)) {
-        game_over = true;//END of GAME
+        gameStatus = GAME_OVER;//END of GAME
       }
       else {
         PlaySoundFxPieceDrop();
