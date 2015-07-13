@@ -75,6 +75,7 @@ void setup(){
 
   gb.titleScreen(logo);
   gb.battery.show = false;
+  //playMusic(); // Doesn't work yet
 }
 
 //the loop routine runs over and over again forever
