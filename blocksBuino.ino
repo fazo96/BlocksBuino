@@ -10,13 +10,13 @@ extern const byte PROGMEM logo[];
 #define MENU 3
 byte gameStatus = 0;
 
-const short game_force_level = 0;
-short game_level = 1; // 1,2,3,4,5,6,7,8,9 Levels
-short game_menu_level = game_level;
+const byte game_force_level = 0;
+byte game_level = 1; // 1,2,3,4,5,6,7,8,9 Levels
+byte game_menu_level = game_level;
 #define GAME_LEVEL_MAX 9
-int game_levels[GAME_LEVEL_MAX] = { 800, 750, 700, 650, 600, 500, 400, 300, 200 };
-int game_score = 0;
-int game_lines = 0;
+const byte PROGMEM game_levels[GAME_LEVEL_MAX] = { 800, 750, 700, 650, 600, 500, 400, 300, 200 };
+byte game_score = 0;
+byte game_lines = 0;
 unsigned long game_delai = game_levels[game_level];
 unsigned long game_prevTime = 0;
 //END game variables
@@ -56,10 +56,7 @@ enum type_blocks {
 short player_blocks_type = BLOCKS_LINE;
 short player_blocks_current_type = BLOCKS_LINE;
 short player_blocks_rotation = 1; //1,2,3,4
-short player_blocks1[2]; //rotation point y,x
-short player_blocks2[2];
-short player_blocks3[2];
-short player_blocks4[2];
+short player_blocks[4][2]; //rotation point y,x
 //END player variables
 
 //field variables 84x48
@@ -72,10 +69,8 @@ const int field_h = -(LCDHEIGHT) - 1;// - 4);// 12 BLOCKS MAX
 void setup(){
   gb.begin();
   gb.pickRandomSeed();
-
   gb.titleScreen(logo);
   gb.battery.show = false;
-  //playMusic(); // Doesn't work yet
 }
 
 //the loop routine runs over and over again forever
@@ -273,12 +268,12 @@ void MovePlayerBlocks() {
     }
   }
   if (gb.buttons.repeat(BTN_DOWN, 1)) {
-    if (player_blocks1[0] > 0 && !CheckBlocksCollision(0, -1)) {
+    if (player_blocks[0][0] > 0 && !CheckBlocksCollision(0, -1)) {
       MoveYBlocks(-1);
       action = true;
     }
   } else if(gb.buttons.repeat(BTN_UP,10)){
-    while(player_blocks1[0] > 0 && !CheckBlocksCollision(0, -1)) {
+    while(player_blocks[0][0] > 0 && !CheckBlocksCollision(0, -1)) {
       MoveYBlocks(-1);
       action = true;
     }
@@ -290,16 +285,16 @@ void MovePlayerBlocks() {
   if (!action && (game_currentTime - game_prevTime) >= game_delai) {
     //check collision
     if (!player_new_blocks && CheckBlocksCollision(0, -1)) {
-      if (player_blocks1[0] >= (BLOCKS_MAX_Y - 1)) {
+      if (player_blocks[0][0] >= (BLOCKS_MAX_Y - 1)) {
         gameStatus = GAME_OVER;//END of GAME
       }
       else {
         PlaySoundFxPieceDrop();
 
-        blocks_activation[player_blocks1[0]][player_blocks1[1]] = true;
-        blocks_activation[player_blocks2[0]][player_blocks2[1]] = true;
-        blocks_activation[player_blocks3[0]][player_blocks3[1]] = true;
-        blocks_activation[player_blocks4[0]][player_blocks4[1]] = true;
+        blocks_activation[player_blocks[0][0]][player_blocks[0][1]] = true;
+        blocks_activation[player_blocks[1][0]][player_blocks[1][1]] = true;
+        blocks_activation[player_blocks[2][0]][player_blocks[2][1]] = true;
+        blocks_activation[player_blocks[3][0]][player_blocks[3][1]] = true;
         player_new_blocks = true;
 
         CheckLinesCompletion();
@@ -322,17 +317,17 @@ void MovePlayerBlocks() {
 }
 
 void MoveYBlocks(int value) {
-  player_blocks1[0] += value;
-  player_blocks2[0] += value;
-  player_blocks3[0] += value;
-  player_blocks4[0] += value;
+  player_blocks[0][0] += value;
+  player_blocks[1][0] += value;
+  player_blocks[2][0] += value;
+  player_blocks[3][0] += value;
 }
 
 void MoveXBlocks(int value) {
-  player_blocks1[1] += value;
-  player_blocks2[1] += value;
-  player_blocks3[1] += value;
-  player_blocks4[1] += value;
+  player_blocks[0][1] += value;
+  player_blocks[1][1] += value;
+  player_blocks[2][1] += value;
+  player_blocks[3][1] += value;
 }
 
 void RotateBlocks() {
@@ -366,94 +361,94 @@ void NewPlayerBlocks() {
   switch(player_blocks_type) {
   case BLOCKS_LINE:
     //line
-    player_blocks1[0] = BLOCKS_MAX_Y + 2;//axe
-    player_blocks1[1] = BLOCKS_MAX_X / 2;//axe
+    player_blocks[0][0] = BLOCKS_MAX_Y + 2;//axe
+    player_blocks[0][1] = BLOCKS_MAX_X / 2;//axe
 
-    player_blocks2[0] = BLOCKS_MAX_Y + 3;
-    player_blocks2[1] = BLOCKS_MAX_X / 2;
+    player_blocks[1][0] = BLOCKS_MAX_Y + 3;
+    player_blocks[1][1] = BLOCKS_MAX_X / 2;
 
-    player_blocks3[0] = BLOCKS_MAX_Y + 1;
-    player_blocks3[1] = BLOCKS_MAX_X / 2;
+    player_blocks[2][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[2][1] = BLOCKS_MAX_X / 2;
 
-    player_blocks4[0] = BLOCKS_MAX_Y;
-    player_blocks4[1] = BLOCKS_MAX_X / 2;
+    player_blocks[3][0] = BLOCKS_MAX_Y;
+    player_blocks[3][1] = BLOCKS_MAX_X / 2;
     break;
   case BLOCKS_CUBE:
     //cube
-    player_blocks1[0] = BLOCKS_MAX_Y;//axe
-    player_blocks1[1] = (BLOCKS_MAX_X / 2) - 1;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y;
-    player_blocks2[1] = (BLOCKS_MAX_X / 2);
-    player_blocks3[0] = BLOCKS_MAX_Y + 1;
-    player_blocks3[1] = (BLOCKS_MAX_X / 2) - 1;
-    player_blocks4[0] = BLOCKS_MAX_Y + 1;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2);
+    player_blocks[0][0] = BLOCKS_MAX_Y;//axe
+    player_blocks[0][1] = (BLOCKS_MAX_X / 2) - 1;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y;
+    player_blocks[1][1] = (BLOCKS_MAX_X / 2);
+    player_blocks[2][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[2][1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[3][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2);
     break;
   case BLOCKS_T:
     //T
-    player_blocks1[0] = BLOCKS_MAX_Y;//axe
-    player_blocks1[1] = BLOCKS_MAX_X / 2;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y;
-    player_blocks2[1] = (BLOCKS_MAX_X / 2) - 1;
-    player_blocks3[0] = BLOCKS_MAX_Y + 1;
-    player_blocks3[1] = BLOCKS_MAX_X / 2;
-    player_blocks4[0] = BLOCKS_MAX_Y - 1;
-    player_blocks4[1] = BLOCKS_MAX_X / 2;
+    player_blocks[0][0] = BLOCKS_MAX_Y;//axe
+    player_blocks[0][1] = BLOCKS_MAX_X / 2;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y;
+    player_blocks[1][1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[2][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[2][1] = BLOCKS_MAX_X / 2;
+    player_blocks[3][0] = BLOCKS_MAX_Y - 1;
+    player_blocks[3][1] = BLOCKS_MAX_X / 2;
     break;
   case BLOCKS_L:
     //L
-    player_blocks1[0] = BLOCKS_MAX_Y + 1;//axe
-    player_blocks1[1] = (BLOCKS_MAX_X / 2);//axe
-    player_blocks2[0] = BLOCKS_MAX_Y;
-    player_blocks2[1] = (BLOCKS_MAX_X / 2);
-    player_blocks3[0] = BLOCKS_MAX_Y + 2;
-    player_blocks3[1] = (BLOCKS_MAX_X / 2);
-    player_blocks4[0] = BLOCKS_MAX_Y + 2;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[0][0] = BLOCKS_MAX_Y + 1;//axe
+    player_blocks[0][1] = (BLOCKS_MAX_X / 2);//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y;
+    player_blocks[1][1] = (BLOCKS_MAX_X / 2);
+    player_blocks[2][0] = BLOCKS_MAX_Y + 2;
+    player_blocks[2][1] = (BLOCKS_MAX_X / 2);
+    player_blocks[3][0] = BLOCKS_MAX_Y + 2;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2) - 1;
     break;
   case BLOCKS_L_REVERT:
     //L(revert)
-    player_blocks1[0] = BLOCKS_MAX_Y + 1;//axe
-    player_blocks1[1] = BLOCKS_MAX_X / 2;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y;
-    player_blocks2[1] = BLOCKS_MAX_X / 2;
-    player_blocks3[0] = BLOCKS_MAX_Y + 2;
-    player_blocks3[1] = BLOCKS_MAX_X / 2;
-    player_blocks4[0] = BLOCKS_MAX_Y + 2;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2) + 1;
+    player_blocks[0][0] = BLOCKS_MAX_Y + 1;//axe
+    player_blocks[0][1] = BLOCKS_MAX_X / 2;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y;
+    player_blocks[1][1] = BLOCKS_MAX_X / 2;
+    player_blocks[2][0] = BLOCKS_MAX_Y + 2;
+    player_blocks[2][1] = BLOCKS_MAX_X / 2;
+    player_blocks[3][0] = BLOCKS_MAX_Y + 2;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2) + 1;
     break;
   case BLOCKS_S:
     //S
-    player_blocks1[0] = BLOCKS_MAX_Y;//axe
-    player_blocks1[1] = (BLOCKS_MAX_X / 2) - 1;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y + 1;
-    player_blocks2[1] = (BLOCKS_MAX_X / 2) - 1;
-    player_blocks3[0] = BLOCKS_MAX_Y;
-    player_blocks3[1] = (BLOCKS_MAX_X / 2);
-    player_blocks4[0] = BLOCKS_MAX_Y - 1;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2);
+    player_blocks[0][0] = BLOCKS_MAX_Y;//axe
+    player_blocks[0][1] = (BLOCKS_MAX_X / 2) - 1;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[1][1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[2][0] = BLOCKS_MAX_Y;
+    player_blocks[2][1] = (BLOCKS_MAX_X / 2);
+    player_blocks[3][0] = BLOCKS_MAX_Y - 1;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2);
     break;
   case BLOCKS_S_REVERT:
     //S(revert)
-    player_blocks1[0] = BLOCKS_MAX_Y;//axe
-    player_blocks1[1] = BLOCKS_MAX_X / 2;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y + 1;
-    player_blocks2[1] = BLOCKS_MAX_X / 2;
-    player_blocks3[0] = BLOCKS_MAX_Y;
-    player_blocks3[1] = (BLOCKS_MAX_X / 2) - 1;
-    player_blocks4[0] = BLOCKS_MAX_Y - 1;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[0][0] = BLOCKS_MAX_Y;//axe
+    player_blocks[0][1] = BLOCKS_MAX_X / 2;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[1][1] = BLOCKS_MAX_X / 2;
+    player_blocks[2][0] = BLOCKS_MAX_Y;
+    player_blocks[2][1] = (BLOCKS_MAX_X / 2) - 1;
+    player_blocks[3][0] = BLOCKS_MAX_Y - 1;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2) - 1;
     break;
   default:
     //cube
-    player_blocks1[0] = BLOCKS_MAX_Y;//axe
-    player_blocks1[1] = BLOCKS_MAX_X / 2;//axe
-    player_blocks2[0] = BLOCKS_MAX_Y;
-    player_blocks2[1] = (BLOCKS_MAX_X / 2) + 1;
-    player_blocks3[0] = BLOCKS_MAX_Y + 1;
-    player_blocks3[1] = BLOCKS_MAX_X / 2;
-    player_blocks4[0] = BLOCKS_MAX_Y + 1;
-    player_blocks4[1] = (BLOCKS_MAX_X / 2) + 1;
+    player_blocks[0][0] = BLOCKS_MAX_Y;//axe
+    player_blocks[0][1] = BLOCKS_MAX_X / 2;//axe
+    player_blocks[1][0] = BLOCKS_MAX_Y;
+    player_blocks[1][1] = (BLOCKS_MAX_X / 2) + 1;
+    player_blocks[2][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[2][1] = BLOCKS_MAX_X / 2;
+    player_blocks[3][0] = BLOCKS_MAX_Y + 1;
+    player_blocks[3][1] = (BLOCKS_MAX_X / 2) + 1;
     break;
   }
 
@@ -463,25 +458,25 @@ void NewPlayerBlocks() {
 
 boolean CheckBlocksCollision(int x_value, int y_value) {
   //check move right collision
-  if (x_value > 0 && ((player_blocks1[1] + x_value) >= BLOCKS_MAX_X || (player_blocks2[1] + x_value) >= BLOCKS_MAX_X
-    || (player_blocks3[1] + x_value) >= BLOCKS_MAX_X || (player_blocks4[1] + x_value) >= BLOCKS_MAX_X)) {
+  if (x_value > 0 && ((player_blocks[0][1] + x_value) >= BLOCKS_MAX_X || (player_blocks[1][1] + x_value) >= BLOCKS_MAX_X
+    || (player_blocks[2][1] + x_value) >= BLOCKS_MAX_X || (player_blocks[3][1] + x_value) >= BLOCKS_MAX_X)) {
     return true;
   }
   //check move left collision
-  if (x_value < 0 && ((player_blocks1[1] + x_value) < 0 || (player_blocks2[1] + x_value) < 0
-    || (player_blocks3[1] + x_value) < 0 || (player_blocks4[1] + x_value) < 0)) {
+  if (x_value < 0 && ((player_blocks[0][1] + x_value) < 0 || (player_blocks[1][1] + x_value) < 0
+    || (player_blocks[2][1] + x_value) < 0 || (player_blocks[3][1] + x_value) < 0)) {
     return true;
   }
 
   //check move down collision
-  if (y_value < 0 && ((player_blocks1[0] + y_value) < 0 || (player_blocks2[0] + y_value) < 0
-    || (player_blocks3[0] + y_value) < 0  || (player_blocks4[0] + y_value) < 0)) {
+  if (y_value < 0 && ((player_blocks[0][0] + y_value) < 0 || (player_blocks[1][0] + y_value) < 0
+    || (player_blocks[2][0] + y_value) < 0  || (player_blocks[3][0] + y_value) < 0)) {
     return true;
   }
 
   //check collision with other blocks
-  return (player_blocks1[0] < BLOCKS_MAX_Y && (blocks_activation[player_blocks1[0] + y_value][player_blocks1[1] + x_value])) || (player_blocks2[0] < BLOCKS_MAX_Y && blocks_activation[player_blocks2[0] + y_value][player_blocks2[1] + x_value])
-    || (player_blocks3[0] < BLOCKS_MAX_Y && blocks_activation[player_blocks3[0] + y_value][player_blocks3[1] + x_value]) || (player_blocks4[0] < BLOCKS_MAX_Y && blocks_activation[player_blocks4[0] + y_value][player_blocks4[1] + x_value]);
+  return (player_blocks[0][0] < BLOCKS_MAX_Y && (blocks_activation[player_blocks[0][0] + y_value][player_blocks[0][1] + x_value])) || (player_blocks[1][0] < BLOCKS_MAX_Y && blocks_activation[player_blocks[1][0] + y_value][player_blocks[1][1] + x_value])
+    || (player_blocks[2][0] < BLOCKS_MAX_Y && blocks_activation[player_blocks[2][0] + y_value][player_blocks[2][1] + x_value]) || (player_blocks[3][0] < BLOCKS_MAX_Y && blocks_activation[player_blocks[3][0] + y_value][player_blocks[3][1] + x_value]);
 }
 
 void UpdateBlocks() {
@@ -589,17 +584,17 @@ int GetYcoordonnee(int y) {
 }
 
 void DrawPlayerBlocks() {
-  if (player_blocks1[0] < BLOCKS_MAX_Y) {
-    gb.display.drawRect(GetXcoordonnee(player_blocks1[1]), GetYcoordonnee(player_blocks1[0]), block_draw_w, block_draw_h);
+  if (player_blocks[0][0] < BLOCKS_MAX_Y) {
+    gb.display.drawRect(GetXcoordonnee(player_blocks[0][1]), GetYcoordonnee(player_blocks[0][0]), block_draw_w, block_draw_h);
   }
-  if (player_blocks2[0] < BLOCKS_MAX_Y) {
-    gb.display.drawRect(GetXcoordonnee(player_blocks2[1]), GetYcoordonnee(player_blocks2[0]), block_draw_w, block_draw_h);
+  if (player_blocks[1][0] < BLOCKS_MAX_Y) {
+    gb.display.drawRect(GetXcoordonnee(player_blocks[1][1]), GetYcoordonnee(player_blocks[1][0]), block_draw_w, block_draw_h);
   }
-  if (player_blocks3[0] < BLOCKS_MAX_Y) {
-    gb.display.drawRect(GetXcoordonnee(player_blocks3[1]), GetYcoordonnee(player_blocks3[0]), block_draw_w, block_draw_h);
+  if (player_blocks[2][0] < BLOCKS_MAX_Y) {
+    gb.display.drawRect(GetXcoordonnee(player_blocks[2][1]), GetYcoordonnee(player_blocks[2][0]), block_draw_w, block_draw_h);
   }
-  if (player_blocks4[0] < BLOCKS_MAX_Y) {
-    gb.display.drawRect(GetXcoordonnee(player_blocks4[1]), GetYcoordonnee(player_blocks4[0]), block_draw_w, block_draw_h);
+  if (player_blocks[3][0] < BLOCKS_MAX_Y) {
+    gb.display.drawRect(GetXcoordonnee(player_blocks[3][1]), GetYcoordonnee(player_blocks[3][0]), block_draw_w, block_draw_h);
   }
 }
 
